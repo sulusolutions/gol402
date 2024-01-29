@@ -1,21 +1,19 @@
 package tokenstore
 
 import (
-	"fmt"
 	"net/url"
 	"sync"
 )
 
-// InMemoryStore is an in-memory implementation of the TokenStore interface.
 type InMemoryStore struct {
 	mu    sync.RWMutex
-	hosts map[string]*trie // Map[Host]*pathTrie
+	store map[string]map[string]*Token // Outer map key is host, inner map key is path
 }
 
 // NewInMemoryStore creates a new instance of InMemoryStore.
 func NewInMemoryStore() *InMemoryStore {
 	return &InMemoryStore{
-		hosts: make(map[string]*trie),
+		store: make(map[string]map[string]*Token),
 	}
 }
 
@@ -27,16 +25,15 @@ func (ims *InMemoryStore) Put(u *url.URL, token *Token) error {
 	host := u.Host
 	path := u.Path
 
-	// Detect invalid host
-	if host == "" {
-		return fmt.Errorf("invalid empty host.")
+	// Initialize host map if not present
+	if _, exists := ims.store[host]; !exists {
+		ims.store[host] = make(map[string]*Token)
 	}
 
-	if ims.hosts[host] == nil {
-		ims.hosts[host] = newTrie()
-	}
+	// Save token against host and path
+	ims.store[host][path] = token
 
-	return ims.hosts[host].put(path, token)
+	return nil
 }
 
 // Get looks for a token that matches the given URL.
@@ -48,8 +45,17 @@ func (ims *InMemoryStore) Get(u *url.URL) (*Token, bool) {
 	host := u.Host
 	path := u.Path
 
-	if trie, ok := ims.hosts[host]; ok {
-		return trie.get(path)
+	// Check if host exists
+	if paths, hostExists := ims.store[host]; hostExists {
+		// Attempt to get the exact path match first
+		if token, pathExists := paths[path]; pathExists {
+			return token, true
+		}
+
+		// If no exact path match, take a token from any path under the host
+		for _, token := range paths {
+			return token, true
+		}
 	}
 
 	return nil, false
@@ -63,8 +69,15 @@ func (ims *InMemoryStore) Delete(u *url.URL) error {
 	host := u.Host
 	path := u.Path
 
-	if trie, ok := ims.hosts[host]; ok {
-		return trie.delete(path)
+	// Check if host exists
+	if paths, hostExists := ims.store[host]; hostExists {
+		// Remove the path entry
+		delete(paths, path)
+
+		// If the inner map is now empty, remove the host entry as well
+		if len(paths) == 0 {
+			delete(ims.store, host)
+		}
 	}
 
 	return nil
