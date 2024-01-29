@@ -32,17 +32,8 @@ func (mw *MockWallet) PayInvoice(ctx context.Context, invoice Invoice) (*Payment
 		// Continue if the context is not done.
 	}
 
-	if mw.PaymentError != nil {
-		return &PaymentResult{
-			Preimage: "",
-			Success:  false,
-			Error:    mw.PaymentError,
-		}, nil
-	}
-
 	return &PaymentResult{
 		Preimage: mockPreimage,
-		Success:  true,
-		Error:    nil,
-	}, nil
+		Success:  mw.PaymentError == nil,
+	}, mw.PaymentError
 }

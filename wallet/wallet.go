@@ -13,7 +13,6 @@ type PaymentResult struct {
 	// Include fields like Preimage, Success, Error, etc.
 	Preimage string
 	Success  bool
-	Error    error
 }
 
 // Wallet defines the interface for wallet implementations capable of handling L402 payments.
