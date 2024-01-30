@@ -21,3 +21,50 @@ To start using the Golang L402 SDK, install it using `go get`:
 
 ```sh
 go get github.com/sulusolutions/gol402
+```
+
+## Example Usage
+
+This example demonstrates how to use the L402 client with the Alby wallet to make a request to the `rnd.ln.sulu.sh/randomnumber` API, which returns a random number.
+
+### Quick Start
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+
+    "github.com/sulusolutions/gol402/client"
+    "github.com/sulusolutions/gol402/tokenstore"
+    "github.com/sulusolutions/gol402/wallet/alby"
+)
+
+func main() {
+    // Initialize the Alby wallet with your bearer token.
+    albyWallet := alby.NewAlbyWallet(os.Getenv("ALBY_BEARER_TOKEN"))
+
+    // Use an in-memory token store.
+    tokenStore := tokenstore.NewInMemoryStore()
+
+    // Create the L402 client.
+    l402Client := client.New(albyWallet, tokenStore)
+
+    // Make a GET request to the rnd.ln.sulu.sh/randomnumber API.
+    response, err := l402Client.MakeRequest(context.Background(), "https://rnd.ln.sulu.sh/randomnumber", "GET")
+    if err != nil {
+        fmt.Printf("Error making request: %v\n", err)
+        return
+    }
+    defer response.Body.Close()
+
+    fmt.Println("Request successful, status code:", response.StatusCode)
+}
+```
+
+### Notes
+
+- Ensure the __ALBY_BEARER_TOKEN__ environment variable is set with your Alby wallet bearer token before running the example.
+- The client automatically handles the L402 payment if required by the API.
