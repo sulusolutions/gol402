@@ -1,4 +1,4 @@
-package wallet
+package alby
 
 import (
 	"bytes"
@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/sulusolutions/l402/wallet"
 )
 
 // AlbyWallet implements the Wallet interface using the Alby REST API.
@@ -26,7 +28,7 @@ func NewAlbyWallet(token string) *AlbyWallet {
 }
 
 // PayInvoice attempts to pay the given invoice and returns the result.
-func (aw *AlbyWallet) PayInvoice(ctx context.Context, invoice Invoice) (*PaymentResult, error) {
+func (aw *AlbyWallet) PayInvoice(ctx context.Context, invoice wallet.Invoice) (*wallet.PaymentResult, error) {
 	path := "/payments/bolt11"
 	body := map[string]interface{}{
 		"invoice": invoice,
@@ -38,7 +40,7 @@ func (aw *AlbyWallet) PayInvoice(ctx context.Context, invoice Invoice) (*Payment
 		return nil, err
 	}
 
-	var result PaymentResult
+	var result wallet.PaymentResult
 	if err := json.Unmarshal(responseBody, &result); err != nil {
 		return nil, fmt.Errorf("error unmarshaling response: %w", err)
 	}
