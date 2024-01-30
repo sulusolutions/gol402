@@ -2,8 +2,6 @@ package l402 // import "github.com/sulusolutions/l402"
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -127,9 +125,9 @@ func parseHeader(header string) (*Challenge, error) {
 // constructL402Token constructs the L402 token from the given Challenge and preimage.
 func constructL402Token(challenge Challenge, preimage string) string {
 	// Encode the macaroon in base64
-	macaroonBase64 := base64.StdEncoding.EncodeToString([]byte(challenge.Macaroon))
+	macaroonBase64 := challenge.Macaroon
 	// Encode the preimage in hex
-	preimageHex := hex.EncodeToString([]byte(preimage))
+	preimageHex := preimage
 	// Construct the token in the format "macaroons:preimage"
 	return macaroonBase64 + ":" + preimageHex
 }
