@@ -10,9 +10,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sulusolutions/l402"
-	"github.com/sulusolutions/l402/tokenstore"
-	"github.com/sulusolutions/l402/wallet/alby"
+	l402 "github.com/sulusolutions/gol402"
+	"github.com/sulusolutions/gol402/tokenstore"
+	"github.com/sulusolutions/gol402/wallet/alby"
 )
 
 func TestClientE2E(t *testing.T) {

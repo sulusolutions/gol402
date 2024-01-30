@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sulusolutions/l402/tokenstore"
-	"github.com/sulusolutions/l402/wallet"
+	"github.com/sulusolutions/gol402/tokenstore"
+	"github.com/sulusolutions/gol402/wallet"
 )
 
 // TestNewClient verifies that the NewClient function returns a Client instance with the expected wallet.

@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/sulusolutions/l402/tokenstore"
-	"github.com/sulusolutions/l402/wallet"
+	"github.com/sulusolutions/gol402/tokenstore"
+	"github.com/sulusolutions/gol402/wallet"
 )
 
 // Challenge holds the parsed invoice and macaroon from the WWW-Authenticate header.
