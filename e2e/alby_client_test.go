@@ -1,3 +1,7 @@
+//go:build e2e
+// +build e2e
+
+// Package e2e contains end-to-end tests for the L402 client.
 package e2e
 
 import (
@@ -15,8 +19,7 @@ func TestClientE2E(t *testing.T) {
 	// Retrieve the bearer token from an environment variable
 	bearerToken := os.Getenv("ALBY_BEARER_TOKEN")
 	if bearerToken == "" {
-		// t.Fatalf("ALBY_BEARER_TOKEN is not set, skipping E2E test")
-		bearerToken = "ODAXZMI4NJETYTJKNY0ZZMJLLWE1MMMTYZMYOTZKNTNHMTU2"
+		t.Fatalf("ALBY_BEARER_TOKEN is not set, skipping E2E test")
 	}
 
 	// Initialize the Alby wallet with the bearer token
