@@ -14,7 +14,7 @@ import (
 // TestNewClient verifies that the NewClient function returns a Client instance with the expected wallet.
 func TestNewClient(t *testing.T) {
 	m := wallet.NewMockWallet(nil)
-	c := NewClient(m, tokenstore.NewNoopStore())
+	c := New(m, tokenstore.NewNoopStore())
 
 	if c == nil {
 		t.Errorf("NewClient returned nil")
@@ -89,7 +89,7 @@ func TestMakeRequest(t *testing.T) {
 			defer server.Close()
 
 			mockWallet := wallet.NewMockWallet(tt.walletErr)
-			client := NewClient(mockWallet, tokenstore.NewNoopStore())
+			client := New(mockWallet, tokenstore.NewNoopStore())
 
 			resp, err := client.MakeRequest(context.Background(), server.URL, "GET")
 

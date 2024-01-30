@@ -29,7 +29,7 @@ func TestClientE2E(t *testing.T) {
 	tokenStore := tokenstore.NewInMemoryStore()
 
 	// Create a new L402 client with the Alby wallet and in-memory token store
-	client := client.NewClient(albyWallet, tokenStore)
+	client := client.New(albyWallet, tokenStore)
 
 	// Make a request to the L402 API
 	ctx := context.Background()

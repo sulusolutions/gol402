@@ -23,9 +23,9 @@ type Client struct {
 	store  tokenstore.Store
 }
 
-// NewClient creates a new L402 client with the provided wallet for handling payments
+// New creates a new L402 client with the provided wallet for handling payments
 // and token store for storing L402 tokens.
-func NewClient(w wallet.Wallet, s tokenstore.Store) *Client {
+func New(w wallet.Wallet, s tokenstore.Store) *Client {
 	return &Client{
 		wallet: w,
 		store:  s,
