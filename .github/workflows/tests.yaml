@@ -1,4 +1,4 @@
-name: unit tests
+name: tests
 
 on:
   push:
@@ -60,6 +60,6 @@ jobs:
         with:
           go-version: '1.21'
 
-      - run: go test ./e2e/... -v
+      - run: go test -tags e2e ./e2e/... -v
         env:
           ALBY_BEARER_TOKEN: ${{ secrets.ALBY_BEARER_TOKEN }}
