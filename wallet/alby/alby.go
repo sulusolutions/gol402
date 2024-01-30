@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/sulusolutions/l402/wallet"
+	"github.com/sulusolutions/gol402/wallet"
 )
 
 type albyPaymentResponse struct {

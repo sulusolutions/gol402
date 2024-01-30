@@ -10,9 +10,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sulusolutions/l402"
-	"github.com/sulusolutions/l402/tokenstore"
-	"github.com/sulusolutions/l402/wallet/alby"
+	"github.com/sulusolutions/gol402/client"
+	"github.com/sulusolutions/gol402/tokenstore"
+	"github.com/sulusolutions/gol402/wallet/alby"
 )
 
 func TestClientE2E(t *testing.T) {
@@ -29,7 +29,7 @@ func TestClientE2E(t *testing.T) {
 	tokenStore := tokenstore.NewInMemoryStore()
 
 	// Create a new L402 client with the Alby wallet and in-memory token store
-	client := l402.NewClient(albyWallet, tokenStore)
+	client := client.New(albyWallet, tokenStore)
 
 	// Make a request to the L402 API
 	ctx := context.Background()

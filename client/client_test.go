@@ -1,4 +1,4 @@
-package l402
+package client
 
 import (
 	"context"
@@ -7,14 +7,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sulusolutions/l402/tokenstore"
-	"github.com/sulusolutions/l402/wallet"
+	"github.com/sulusolutions/gol402/tokenstore"
+	"github.com/sulusolutions/gol402/wallet"
 )
 
 // TestNewClient verifies that the NewClient function returns a Client instance with the expected wallet.
 func TestNewClient(t *testing.T) {
 	m := wallet.NewMockWallet(nil)
-	c := NewClient(m, tokenstore.NewNoopStore())
+	c := New(m, tokenstore.NewNoopStore())
 
 	if c == nil {
 		t.Errorf("NewClient returned nil")
@@ -89,7 +89,7 @@ func TestMakeRequest(t *testing.T) {
 			defer server.Close()
 
 			mockWallet := wallet.NewMockWallet(tt.walletErr)
-			client := NewClient(mockWallet, tokenstore.NewNoopStore())
+			client := New(mockWallet, tokenstore.NewNoopStore())
 
 			resp, err := client.MakeRequest(context.Background(), server.URL, "GET")
 

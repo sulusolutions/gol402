@@ -1,4 +1,4 @@
-package l402 // import "github.com/sulusolutions/l402"
+package client // import "github.com/sulusolutions/l402"
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/sulusolutions/l402/tokenstore"
-	"github.com/sulusolutions/l402/wallet"
+	"github.com/sulusolutions/gol402/tokenstore"
+	"github.com/sulusolutions/gol402/wallet"
 )
 
 // Challenge holds the parsed invoice and macaroon from the WWW-Authenticate header.
@@ -23,9 +23,9 @@ type Client struct {
 	store  tokenstore.Store
 }
 
-// NewClient creates a new L402 client with the provided wallet for handling payments
+// New creates a new L402 client with the provided wallet for handling payments
 // and token store for storing L402 tokens.
-func NewClient(w wallet.Wallet, s tokenstore.Store) *Client {
+func New(w wallet.Wallet, s tokenstore.Store) *Client {
 	return &Client{
 		wallet: w,
 		store:  s,
