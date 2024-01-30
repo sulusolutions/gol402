@@ -1,4 +1,4 @@
-package l402 // import "github.com/sulusolutions/l402"
+package client // import "github.com/sulusolutions/l402"
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package l402
+package client
 
 import (
 	"context"
