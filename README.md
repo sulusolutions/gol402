@@ -20,4 +20,4 @@ The Golang L402 SDK is a comprehensive Go package designed to simplify the integ
 To start using the Golang L402 SDK, install it using `go get`:
 
 ```sh
-go get github.com/sulusolutions/l402
+go get github.com/sulusolutions/gol402
