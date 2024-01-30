@@ -11,6 +11,16 @@ import (
 	"github.com/sulusolutions/l402/wallet"
 )
 
+type albyPaymentResponse struct {
+	Amount          int    `json:"amount"`
+	Description     string `json:"description"`
+	Destination     string `json:"destination"`
+	Fee             int    `json:"fee"`
+	PaymentHash     string `json:"payment_hash"`
+	PaymentPreimage string `json:"payment_preimage"`
+	PaymentRequest  string `json:"payment_request"`
+}
+
 // AlbyWallet implements the Wallet interface using the Alby REST API.
 type AlbyWallet struct {
 	// BaseURL is the base URL for the Alby API.
@@ -40,12 +50,15 @@ func (aw *AlbyWallet) PayInvoice(ctx context.Context, invoice wallet.Invoice) (*
 		return nil, err
 	}
 
-	var result wallet.PaymentResult
-	if err := json.Unmarshal(responseBody, &result); err != nil {
-		return nil, fmt.Errorf("error unmarshaling response: %w", err)
+	var albyResponse albyPaymentResponse
+	if err := json.Unmarshal(responseBody, &albyResponse); err != nil {
+		return nil, fmt.Errorf("error unmarshaling Alby response: %w", err)
 	}
 
+	var result wallet.PaymentResult
+	result.Preimage = albyResponse.PaymentPreimage
 	result.Success = true
+
 	return &result, nil
 }
 
