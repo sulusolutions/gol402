@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 
+	"github.com/sulusolutions/l402/tokenstore"
 	"github.com/sulusolutions/l402/wallet"
 )
 
@@ -20,21 +22,35 @@ type Challenge struct {
 // Client represents a client capable of handling L402 payments and making authenticated requests.
 type Client struct {
 	wallet wallet.Wallet
+	store  tokenstore.Store
 }
 
-// NewClient creates a new L402 client with the provided wallet for handling payments.
-func NewClient(w wallet.Wallet) *Client {
+// NewClient creates a new L402 client with the provided wallet for handling payments
+// and token store for storing L402 tokens.
+func NewClient(w wallet.Wallet, s tokenstore.Store) *Client {
 	return &Client{
 		wallet: w,
+		store:  s,
 	}
 }
 
 // MakeRequest makes an HTTP request to the specified URL and handles L402 payment challenges.
 // It automatically pays the invoice and retries the request with the L402 token if a 402 Payment Required response is received.
-func (c *Client) MakeRequest(ctx context.Context, url string, method string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, method, url, nil)
+func (c *Client) MakeRequest(ctx context.Context, rawUrl string, method string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, method, rawUrl, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	// Retrieve L402 token from store if available and try request.
+	u, err := url.Parse(rawUrl)
+	if err != nil {
+		// For now we will just warn and continue, but this should be handled more gracefully.
+		fmt.Printf("error parsing url: %v\n", err)
+	}
+	l402Token, ok := c.store.Get(u)
+	if ok {
+		req.Header.Set("Authorization", "L402 "+string(l402Token))
 	}
 
 	response, err := http.DefaultClient.Do(req)
@@ -46,7 +62,7 @@ func (c *Client) MakeRequest(ctx context.Context, url string, method string) (*h
 	// Handle 402 Payment Required by delegating to the handlePaymentChallenge function
 	if response.StatusCode == http.StatusPaymentRequired {
 		authHeader := response.Header.Get("WWW-Authenticate")
-		return c.handlePaymentChallenge(ctx, authHeader, url, method)
+		return c.handlePaymentChallenge(ctx, authHeader, rawUrl, method)
 	}
 
 	return response, nil
@@ -54,7 +70,7 @@ func (c *Client) MakeRequest(ctx context.Context, url string, method string) (*h
 
 // handlePaymentChallenge handles the 402 Payment Required response by extracting the invoice and macaroon,
 // paying the invoice, and constructing the L402 token for retrying the request.
-func (c *Client) handlePaymentChallenge(ctx context.Context, authHeader, url, method string) (*http.Response, error) {
+func (c *Client) handlePaymentChallenge(ctx context.Context, authHeader, rawUrl, method string) (*http.Response, error) {
 	challenge, err := parseHeader(authHeader)
 	if err != nil {
 		return nil, err
@@ -70,11 +86,18 @@ func (c *Client) handlePaymentChallenge(ctx context.Context, authHeader, url, me
 	l402Token := constructL402Token(*challenge, paymentResult.Preimage)
 
 	// Prepare a new request for retrying with the L402 token
-	retryReq, err := http.NewRequestWithContext(ctx, method, url, nil)
+	retryReq, err := http.NewRequestWithContext(ctx, method, rawUrl, nil)
 	if err != nil {
 		return nil, err
 	}
 	retryReq.Header.Set("Authorization", "L402 "+l402Token)
+	u, err := url.Parse(rawUrl)
+	if err != nil {
+		// For now we will just warn and continue, but this should be handled more gracefully.
+		fmt.Printf("error parsing url: %v\n", err)
+	}
+
+	c.store.Put(u, tokenstore.Token(l402Token))
 
 	// Retry the request with Authorization header
 	return http.DefaultClient.Do(retryReq)

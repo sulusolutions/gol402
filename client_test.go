@@ -7,13 +7,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sulusolutions/l402/tokenstore"
 	"github.com/sulusolutions/l402/wallet"
 )
 
 // TestNewClient verifies that the NewClient function returns a Client instance with the expected wallet.
 func TestNewClient(t *testing.T) {
 	m := wallet.NewMockWallet(nil)
-	c := NewClient(m)
+	c := NewClient(m, tokenstore.NewNoopStore())
 
 	if c == nil {
 		t.Errorf("NewClient returned nil")
@@ -22,18 +23,18 @@ func TestNewClient(t *testing.T) {
 
 func TestMakeRequest(t *testing.T) {
 	tests := []struct {
-		name           string
-		serverHandler  func(w http.ResponseWriter, r *http.Request)
-		mockWalletErr  error
-		expectedStatus int
-		expectError    bool
+		name          string
+		serverHandler func(w http.ResponseWriter, r *http.Request)
+		walletErr     error
+		wantStatus    int
+		wantError     bool
 	}{
 		{
 			name: "Successful request without 402 challenge",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			},
-			expectedStatus: http.StatusOK,
+			wantStatus: http.StatusOK,
 		},
 		{
 			name: "Handle 402 Payment Required with successful payment",
@@ -45,7 +46,7 @@ func TestMakeRequest(t *testing.T) {
 					w.WriteHeader(http.StatusOK)
 				}
 			},
-			expectedStatus: http.StatusOK,
+			wantStatus: http.StatusOK,
 		},
 		{
 			name: "Handle 402 Payment Required with payment failure",
@@ -53,22 +54,22 @@ func TestMakeRequest(t *testing.T) {
 				w.Header().Set("WWW-Authenticate", `L402 macaroon="testMacaroon", invoice="testInvoice"`)
 				w.WriteHeader(http.StatusPaymentRequired)
 			},
-			mockWalletErr: fmt.Errorf("payment error"),
-			expectError:   true,
+			walletErr: fmt.Errorf("payment error"),
+			wantError: true,
 		},
 		{
 			name: "Server returns an error status code other than 402",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusInternalServerError)
 			},
-			expectedStatus: http.StatusInternalServerError,
+			wantStatus: http.StatusInternalServerError,
 		},
 		{
 			name: "Server returns 402 without WWW-Authenticate header",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusPaymentRequired)
 			},
-			expectError: true,
+			wantError: true,
 		},
 		{
 			name: "Malformed WWW-Authenticate header",
@@ -76,7 +77,7 @@ func TestMakeRequest(t *testing.T) {
 				w.Header().Set("WWW-Authenticate", `L402 malformed="header"`)
 				w.WriteHeader(http.StatusPaymentRequired)
 			},
-			expectError: true,
+			wantError: true,
 		},
 		// Additional test cases can be added here as needed...
 	}
@@ -87,17 +88,17 @@ func TestMakeRequest(t *testing.T) {
 			server := mockServer.Start()
 			defer server.Close()
 
-			mockWallet := wallet.NewMockWallet(tt.mockWalletErr)
-			client := NewClient(mockWallet)
+			mockWallet := wallet.NewMockWallet(tt.walletErr)
+			client := NewClient(mockWallet, tokenstore.NewNoopStore())
 
 			resp, err := client.MakeRequest(context.Background(), server.URL, "GET")
 
-			if (err != nil) != tt.expectError {
-				t.Errorf("MakeRequest() error = %v, expectError %v", err, tt.expectError)
+			if (err != nil) != tt.wantError {
+				t.Errorf("MakeRequest() error = %v, expectError %v", err, tt.wantError)
 				return
 			}
-			if resp != nil && resp.StatusCode != tt.expectedStatus {
-				t.Errorf("MakeRequest() expected status = %v, got %v", tt.expectedStatus, resp.StatusCode)
+			if resp != nil && resp.StatusCode != tt.wantStatus {
+				t.Errorf("MakeRequest() expected status = %v, got %v", tt.wantStatus, resp.StatusCode)
 			}
 		})
 	}
