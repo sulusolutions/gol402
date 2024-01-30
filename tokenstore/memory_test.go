@@ -11,16 +11,16 @@ import (
 func TestPutNewToken(t *testing.T) {
 	store := NewInMemoryStore()
 	testURL, _ := url.Parse("http://host.com/path")
-	testToken := Token("token123")
+	want := Token("token123")
 
-	err := store.Put(testURL, &testToken)
+	err := store.Put(testURL, want)
 	if err != nil {
 		t.Errorf("Failed to put new token: %v", err)
 	}
 
-	storedToken, exists := store.Get(testURL)
-	if !exists || *storedToken != testToken {
-		t.Errorf("Expected token %v, got %v", testToken, storedToken)
+	got, ok := store.Get(testURL)
+	if !ok || got != want {
+		t.Errorf("Expected token %v, got %v", want, got)
 	}
 }
 
@@ -31,15 +31,19 @@ func TestUpdateToken(t *testing.T) {
 	initialToken := Token("initialToken")
 	updatedToken := Token("updatedToken")
 
-	_ = store.Put(testURL, &initialToken)
-	err := store.Put(testURL, &updatedToken)
+	_ = store.Put(testURL, initialToken)
+
+	err := store.Put(testURL, updatedToken)
 	if err != nil {
 		t.Errorf("Failed to update token: %v", err)
 	}
 
-	storedToken, exists := store.Get(testURL)
-	if !exists || *storedToken != updatedToken {
-		t.Errorf("Expected updated token %v, got %v", updatedToken, storedToken)
+	got, ok := store.Get(testURL)
+	if !ok {
+		t.Errorf("Token does not exist for URL: %v", testURL)
+	}
+	if got != updatedToken {
+		t.Errorf("Expected updated token %v, got %v", updatedToken, got)
 	}
 }
 
@@ -47,20 +51,33 @@ func TestUpdateToken(t *testing.T) {
 func TestPutDifferentPaths(t *testing.T) {
 	store := NewInMemoryStore()
 	host := "http://host.com"
-	path1, path2 := "/path1", "/path2"
-	token1, token2 := Token("token1"), Token("token2")
 
-	_ = store.Put(&url.URL{Host: host, Path: path1}, &token1)
-	_ = store.Put(&url.URL{Host: host, Path: path2}, &token2)
-
-	storedToken1, exists1 := store.Get(&url.URL{Host: host, Path: path1})
-	storedToken2, exists2 := store.Get(&url.URL{Host: host, Path: path2})
-
-	if !exists1 || *storedToken1 != token1 {
-		t.Errorf("Expected token %v for path %v, got %v", token1, path1, storedToken1)
+	tests := []struct {
+		path  string
+		token Token
+	}{
+		{"/path1", Token("token1")},
+		{"/path2", Token("token2")},
 	}
-	if !exists2 || *storedToken2 != token2 {
-		t.Errorf("Expected token %v for path %v, got %v", token2, path2, storedToken2)
+
+	// Put tokens
+	for _, tc := range tests {
+		testURL := &url.URL{Host: host, Path: tc.path}
+		if err := store.Put(testURL, tc.token); err != nil {
+			t.Fatalf("Failed to put token for %s: %v", tc.path, err)
+		}
+	}
+
+	// Get and check tokens
+	for _, tc := range tests {
+		testURL := &url.URL{Host: host, Path: tc.path}
+		got, ok := store.Get(testURL)
+		if !ok {
+			t.Errorf("Token for path %q not found", tc.path)
+		} else if got != tc.token {
+			t.Errorf("For path %q, expected token %q, got %q", tc.path, tc.token, got)
+		}
+
 	}
 }
 
@@ -81,8 +98,8 @@ func TestConcurrentPut(t *testing.T) {
 			if testURL == nil {
 				t.Errorf("Failed to parse URL: %v", baseURL+fmt.Sprint(i))
 			}
-			testToken := Token("token" + fmt.Sprint(i))
-			_ = store.Put(testURL, &testToken)
+			want := Token("token" + fmt.Sprint(i))
+			_ = store.Put(testURL, want)
 		}(i)
 	}
 
@@ -90,10 +107,13 @@ func TestConcurrentPut(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		testURL, _ := url.Parse(baseURL + fmt.Sprint(i))
-		storedToken, exists := store.Get(testURL)
-		expectedToken := Token("token" + fmt.Sprint(i))
-		if !exists || *storedToken != expectedToken {
-			t.Errorf("Concurrent put failed for %v: expected %v, got %v", testURL, expectedToken, storedToken)
+		got, ok := store.Get(testURL)
+		want := Token("token" + fmt.Sprint(i))
+		if !ok {
+			t.Errorf("Concurrent put failed for %v: token not found", testURL)
+		}
+		if got != want {
+			t.Errorf("Concurrent put failed for %v: expected %v, got %v", testURL, want, got)
 		}
 	}
 }
@@ -102,13 +122,16 @@ func TestConcurrentPut(t *testing.T) {
 func TestGetTokenExactMatch(t *testing.T) {
 	store := NewInMemoryStore()
 	testURL, _ := url.Parse("http://host.com/path")
-	testToken := Token("token123")
+	token := Token("token123")
 
-	_ = store.Put(testURL, &testToken)
+	_ = store.Put(testURL, token)
 
-	storedToken, exists := store.Get(testURL)
-	if !exists || *storedToken != testToken {
-		t.Errorf("Expected to retrieve token %v, got %v", testToken, storedToken)
+	got, ok := store.Get(testURL)
+	if !ok {
+		t.Errorf("Expected to retrieve token %v, but retrieval failed", token)
+	}
+	if got != token {
+		t.Errorf("Expected to retrieve token %v, got %v", token, got)
 	}
 }
 
@@ -117,13 +140,13 @@ func TestGetTokenHostMatch(t *testing.T) {
 	store := NewInMemoryStore()
 	putURL, _ := url.Parse("http://host.com/path")
 	getURL, _ := url.Parse("http://host.com/anotherpath")
-	testToken := Token("token123")
+	want := Token("token123")
 
-	_ = store.Put(putURL, &testToken)
+	_ = store.Put(putURL, want)
 
-	storedToken, exists := store.Get(getURL)
-	if !exists || *storedToken != testToken {
-		t.Errorf("Expected to retrieve token %v for host match, got %v", testToken, storedToken)
+	got, ok := store.Get(getURL)
+	if !ok || got != want {
+		t.Errorf("Expected to retrieve token %v for host match, got %v", want, got)
 	}
 }
 
@@ -132,8 +155,8 @@ func TestGetTokenNoMatch(t *testing.T) {
 	store := NewInMemoryStore()
 	testURL, _ := url.Parse("http://host.com/path")
 
-	_, exists := store.Get(testURL)
-	if exists {
+	_, ok := store.Get(testURL)
+	if ok {
 		t.Errorf("Expected no token to be retrieved, but got one")
 	}
 }
@@ -145,8 +168,8 @@ func TestConcurrentGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to parse URL: %v", err)
 	}
-	testToken := Token("token123")
-	_ = store.Put(u, &testToken)
+	want := Token("token123")
+	_ = store.Put(u, want)
 
 	var wg sync.WaitGroup
 
@@ -154,9 +177,12 @@ func TestConcurrentGet(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			storedToken, exists := store.Get(u)
-			if !exists || *storedToken != testToken {
-				t.Errorf("Concurrent Get failed: expected %v, got %v", testToken, storedToken)
+			got, ok := store.Get(u)
+			if !ok {
+				t.Errorf("Concurrent Get failed: token not found")
+			}
+			if got != want {
+				t.Errorf("Concurrent Get failed: expected %v, got %v", want, got)
 			}
 		}()
 	}
@@ -168,14 +194,14 @@ func TestConcurrentGet(t *testing.T) {
 func TestDeleteExistingToken(t *testing.T) {
 	store := NewInMemoryStore()
 	testURL, _ := url.Parse("http://host.com/path")
-	testToken := Token("token123")
+	want := Token("token123")
 
-	_ = store.Put(testURL, &testToken)
+	_ = store.Put(testURL, want)
 	_ = store.Delete(testURL)
 
-	storedToken, exists := store.Get(testURL)
-	if exists {
-		t.Errorf("Expected no token after deletion, but found %v", storedToken)
+	got, ok := store.Get(testURL)
+	if ok {
+		t.Errorf("Expected no token after deletion, but found %v", got)
 	}
 }
 
@@ -194,22 +220,37 @@ func TestDeleteNonExistentToken(t *testing.T) {
 func TestDeleteEffectOnOtherTokens(t *testing.T) {
 	store := NewInMemoryStore()
 	host := "http://host.com"
-	path1, path2 := "/path1", "/path2"
-	token1, token2 := Token("token1"), Token("token2")
+	firstPath, secondPath := "/path1", "/path2"
+	firstToken, secondToken := Token("token1"), Token("token2")
 
-	_ = store.Put(&url.URL{Host: host, Path: path1}, &token1)
-	_ = store.Put(&url.URL{Host: host, Path: path2}, &token2)
-
-	_ = store.Delete(&url.URL{Host: host, Path: path1})
-
-	storedToken1, _ := store.Get(&url.URL{Host: host, Path: path1})
-	storedToken2, exists2 := store.Get(&url.URL{Host: host, Path: path2})
-
-	if storedToken1 != storedToken2 {
-		t.Errorf("Token for path1 should have been deleted and we should get token for path2")
+	// Store two tokens under the same host but different paths
+	if err := store.Put(&url.URL{Host: host, Path: firstPath}, firstToken); err != nil {
+		t.Fatalf("Failed to store token for first path: %v", err)
 	}
-	if !exists2 || storedToken2 == nil || *storedToken2 != token2 {
-		t.Errorf("Token for path2 should remain unaffected after deleting token for path1")
+	if err := store.Put(&url.URL{Host: host, Path: secondPath}, secondToken); err != nil {
+		t.Fatalf("Failed to store token for second path: %v", err)
+	}
+
+	// Delete the token associated with the first path
+	if err := store.Delete(&url.URL{Host: host, Path: firstPath}); err != nil {
+		t.Fatalf("Failed to delete token for first path: %v", err)
+	}
+
+	// Attempt to retrieve the deleted token
+	got, ok := store.Get(&url.URL{Host: host, Path: firstPath})
+	if !ok {
+		t.Error("Expected token2 for the first path after deletion")
+	}
+	if got != secondToken {
+		t.Errorf("Expected token2 for the first path after deletion, got %v", got)
+	}
+
+	// Verify the second token is unaffected
+	got, ok = store.Get(&url.URL{Host: host, Path: secondPath})
+	if !ok {
+		t.Error("Expected to find a token for the second path, but none was found")
+	} else if got != secondToken {
+		t.Errorf("Expected to retrieve the second token %q, but got %q", secondToken, got)
 	}
 }
 
@@ -217,16 +258,16 @@ func TestDeleteEffectOnOtherTokens(t *testing.T) {
 func TestDeleteHostLevelCleanup(t *testing.T) {
 	store := NewInMemoryStore()
 	testURL, _ := url.Parse("http://host.com/path")
-	testToken := Token("token123")
+	want := Token("token123")
 
-	_ = store.Put(testURL, &testToken)
+	_ = store.Put(testURL, want)
 	_ = store.Delete(testURL)
 
 	// Attempt to retrieve a token for the same host but different path
 	otherPathURL, _ := url.Parse("http://host.com/otherpath")
-	_, exists := store.Get(otherPathURL)
+	_, ok := store.Get(otherPathURL)
 
-	if exists {
+	if ok {
 		t.Errorf("Host entry should be removed after deleting its last token")
 	}
 }
@@ -238,8 +279,8 @@ func TestConcurrentDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to parse URL: %v", err)
 	}
-	testToken := Token("token123")
-	_ = store.Put(baseURL, &testToken)
+	want := Token("token123")
+	_ = store.Put(baseURL, want)
 
 	var wg sync.WaitGroup
 
@@ -253,8 +294,8 @@ func TestConcurrentDelete(t *testing.T) {
 
 	wg.Wait()
 
-	_, exists := store.Get(&url.URL{Host: "host.com", Path: "/path"})
-	if exists {
+	_, ok := store.Get(&url.URL{Host: "host.com", Path: "/path"})
+	if ok {
 		t.Errorf("Token should have been deleted after concurrent deletion attempts")
 	}
 }

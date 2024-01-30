@@ -7,18 +7,18 @@ import (
 
 type InMemoryStore struct {
 	mu    sync.RWMutex
-	store map[string]map[string]*Token // Outer map key is host, inner map key is path
+	store map[string]map[string]Token // Outer map key is host, inner map key is path
 }
 
 // NewInMemoryStore creates a new instance of InMemoryStore.
 func NewInMemoryStore() *InMemoryStore {
 	return &InMemoryStore{
-		store: make(map[string]map[string]*Token),
+		store: make(map[string]map[string]Token),
 	}
 }
 
 // Put saves a token against a specified host and path from the URL.
-func (ims *InMemoryStore) Put(u *url.URL, token *Token) error {
+func (ims *InMemoryStore) Put(u *url.URL, token Token) error {
 	ims.mu.Lock()
 	defer ims.mu.Unlock()
 
@@ -27,7 +27,7 @@ func (ims *InMemoryStore) Put(u *url.URL, token *Token) error {
 
 	// Initialize host map if not present
 	if _, exists := ims.store[host]; !exists {
-		ims.store[host] = make(map[string]*Token)
+		ims.store[host] = make(map[string]Token)
 	}
 
 	// Save token against host and path
@@ -38,7 +38,7 @@ func (ims *InMemoryStore) Put(u *url.URL, token *Token) error {
 
 // Get looks for a token that matches the given URL.
 // It returns the most relevant token if available; otherwise, it returns nil.
-func (ims *InMemoryStore) Get(u *url.URL) (*Token, bool) {
+func (ims *InMemoryStore) Get(u *url.URL) (Token, bool) {
 	ims.mu.RLock()
 	defer ims.mu.RUnlock()
 
@@ -58,7 +58,7 @@ func (ims *InMemoryStore) Get(u *url.URL) (*Token, bool) {
 		}
 	}
 
-	return nil, false
+	return "", false
 }
 
 // Delete removes a token that matches the given URL.
