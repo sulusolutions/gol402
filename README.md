@@ -1,4 +1,6 @@
-# Golang L402 Library
+https://github.com/sulusolutions/gol402/actions/workflows/tests.yaml/badge.svg
+
+# gol402: Golang L402 Library
 
 gol402 is a comprehensive Go package designed to simplify the integration and handling of L402 protocol payments within the Lightning Network ecosystem. This SDK offers convenient abstractions for wallet interactions, invoice payments, and token management, making it an essential tool for developers working on Go-based applications requiring L402 API access.
 
