@@ -35,6 +35,7 @@ package main
 import (
     "context"
     "fmt"
+    "net/http"
     "os"
 
     "github.com/sulusolutions/gol402/client"
@@ -52,8 +53,15 @@ func main() {
     // Create the L402 client.
     l402Client := client.New(albyWallet, tokenStore)
 
-    // Make a GET request to the rnd.ln.sulu.sh/randomnumber API.
-    response, err := l402Client.MakeRequest(context.Background(), "https://rnd.ln.sulu.sh/randomnumber", "GET")
+    // Create a new HTTP request to the rnd.ln.sulu.sh/randomnumber API.
+    req, err := http.NewRequest("GET", "https://rnd.ln.sulu.sh/randomnumber", nil)
+    if err != nil {
+        fmt.Printf("Failed to create request: %v\n", err)
+        return
+    }
+
+    // Use the modified MakeRequest function which takes *http.Request.
+    response, err := l402Client.MakeRequest(context.Background(), req)
     if err != nil {
         fmt.Printf("Error making request: %v\n", err)
         return

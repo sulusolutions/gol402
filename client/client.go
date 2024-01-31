@@ -32,21 +32,14 @@ func New(w wallet.Wallet, s tokenstore.Store) *Client {
 	}
 }
 
-// MakeRequest makes an HTTP request to the specified URL and handles L402 payment challenges.
+// MakeRequest makes an HTTP request and handles L402 payment challenges.
 // It automatically pays the invoice and retries the request with the L402 token if a 402 Payment Required response is received.
-func (c *Client) MakeRequest(ctx context.Context, rawUrl string, method string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, method, rawUrl, nil)
-	if err != nil {
-		return nil, err
-	}
+func (c *Client) MakeRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+	// Ensure the request context is set
+	req = req.WithContext(ctx)
 
-	// Retrieve L402 token from store if available and try request.
-	u, err := url.Parse(rawUrl)
-	if err != nil {
-		// For now we will just warn and continue, but this should be handled more gracefully.
-		fmt.Printf("error parsing url: %v\n", err)
-	}
-	l402Token, ok := c.store.Get(u)
+	// Try to retrieve and use L402 token if available
+	l402Token, ok := c.store.Get(req.URL)
 	if ok {
 		req.Header.Set("Authorization", "L402 "+string(l402Token))
 	}
@@ -55,12 +48,10 @@ func (c *Client) MakeRequest(ctx context.Context, rawUrl string, method string) 
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
 
-	// Handle 402 Payment Required by delegating to the handlePaymentChallenge function
 	if response.StatusCode == http.StatusPaymentRequired {
 		authHeader := response.Header.Get("WWW-Authenticate")
-		return c.handlePaymentChallenge(ctx, authHeader, rawUrl, method)
+		return c.handlePaymentChallenge(ctx, authHeader, req.URL.String(), req.Method)
 	}
 
 	return response, nil

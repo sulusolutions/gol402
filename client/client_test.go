@@ -91,14 +91,21 @@ func TestMakeRequest(t *testing.T) {
 			mockWallet := wallet.NewMockWallet(tt.walletErr)
 			client := New(mockWallet, tokenstore.NewNoopStore())
 
-			resp, err := client.MakeRequest(context.Background(), server.URL, "GET")
+			// Create the *http.Request object with the test server's URL
+			req, err := http.NewRequest("GET", server.URL, nil)
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
+
+			// Now use the modified MakeRequest function which takes *http.Request
+			resp, err := client.MakeRequest(context.Background(), req)
 
 			if (err != nil) != tt.wantError {
-				t.Errorf("MakeRequest() error = %v, expectError %v", err, tt.wantError)
+				t.Errorf("MakeRequest() error = %v, wantError %v", err, tt.wantError)
 				return
 			}
 			if resp != nil && resp.StatusCode != tt.wantStatus {
-				t.Errorf("MakeRequest() expected status = %v, got %v", tt.wantStatus, resp.StatusCode)
+				t.Errorf("MakeRequest() got status = %v, want %v", resp.StatusCode, tt.wantStatus)
 			}
 		})
 	}
