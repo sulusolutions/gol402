@@ -31,10 +31,15 @@ func TestClientE2E(t *testing.T) {
 	// Create a new L402 client with the Alby wallet and in-memory token store
 	client := client.New(albyWallet, tokenStore)
 
-	// Make a request to the L402 API
+	// Create a new HTTP request to the L402 API
 	ctx := context.Background()
-	url := "https://rnd.ln.sulu.sh/randomnumber"
-	response, err := client.MakeRequest(ctx, url, "GET")
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://rnd.ln.sulu.sh/randomnumber", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	// Use the modified MakeRequest function which takes *http.Request
+	response, err := client.MakeRequest(ctx, req)
 	if err != nil {
 		t.Fatalf("Failed to make request: %v", err)
 	}
