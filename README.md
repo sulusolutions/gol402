@@ -1,4 +1,4 @@
-https://github.com/sulusolutions/gol402/actions/workflows/tests.yaml/badge.svg
+![tests](https://github.com/sulusolutions/gol402/actions/workflows/tests.yaml/badge.svg)
 
 # gol402: Golang L402 Library
 
