@@ -1,5 +1,5 @@
 ![tests](https://github.com/sulusolutions/gol402/actions/workflows/tests.yaml/badge.svg)
-![go-report](https://goreportcard.com/report/github.com/sulusolutions/gol402)
+[![go-report](https://goreportcard.com/badge/github.com/sulusolutions/gol402)](https://goreportcard.com/report/github.com/sulusolutions/gol402)
 
 # gol402: Golang L402 Library
 
