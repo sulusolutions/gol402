@@ -15,6 +15,10 @@ type PaymentResult struct {
 	Success  bool
 }
 
+type DecodeLndInvoice struct {
+	Amount int
+}
+
 // Wallet defines the interface for wallet implementations capable of handling L402 payments.
 type Wallet interface {
 	// PayInvoice attempts to pay the given invoice and returns the result.
