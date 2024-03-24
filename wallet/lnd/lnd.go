@@ -63,7 +63,7 @@ func NewLNDWallet(macaroonPath string,  address string) *LNDWallet {
 }
 
 // PayInvoice attempts to pay the given invoice and returns the result.
-func (lndw *NewLNDWallet) PayInvoice(ctx context.Context, invoice wallet.Invoice) (*wallet.PaymentLndResult, error) {
+func (lndw *NewLNDWallet) PayLndInvoice(ctx context.Context, invoice wallet.Invoice) (*wallet.PaymentLndResult, error) {
 	path := "/v2/invoices/settle"
 	body := map[string]interface{}{
 		"preimage": invoice,
