@@ -12,15 +12,6 @@ import (
 	"github.com/sulusolutions/gol402/wallet"
 )
 
-type lndPaymentResponse struct {
-	Amount          int    `json:"amount"`
-	Description     string `json:"description"`
-	Destination     string `json:"destination"`
-	Fee             int    `json:"fee"`
-	PaymentHash     string `json:"payment_hash"`
-	PaymentPreimage string `json:"payment_preimage"`
-	PaymentRequest  string `json:"payment_request"`
-}
 
 type lndWalletResponse struct {
 	PaymentError    string `json:"payment_error"`
