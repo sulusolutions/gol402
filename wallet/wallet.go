@@ -22,9 +22,6 @@ type PaymentLndResult struct {
 }
 
 
-type DecodeLndInvoice struct {
-	Amount int
-}
 
 // Wallet defines the interface for wallet implementations capable of handling L402 payments.
 type Wallet interface {
