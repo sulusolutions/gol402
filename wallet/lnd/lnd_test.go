@@ -1,65 +1,77 @@
-
-
-package lnd_test
+package lnd
 
 import (
 	"context"
-	"errors"
 	"testing"
-	"github.com/sulusolutions/gol402/lnd"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
-func TestPayLndInvoice(t *testing.T) {
-	// Mock LNDWallet instance
-	mockLNDWallet := &lnd.LNDWallet{
-		BaseURL:        "http://127.0.0.1:28332",
-		MacaroonString: []byte("mock-macaroon"),
-	}
+// MockRouterClient is a mock implementation of lnrpc.RouterClient for testing.
+type MockRouterClient struct{}
 
-	// Mock context
+func (m MockRouterClient) SendPayment(ctx context.Context, req lndclient.SendPaymentRequest) (<-chan *lnrpc.PaymentStatus, <-chan error, error) {
+	// Mock implementation
+	return nil, nil, nil
+}
+
+func TestHandleSettleInvoice_Success(t *testing.T) {
+	// Mock successful payment status
+	statusChan := make(chan *lnrpc.PaymentStatus)
+	close(statusChan)
+
+	mockInvoice := "mock_invoice"
+
+	lndw := NewLNDWallet("mock_macaroon_path", "mock_address")
+	result, err := lndw.HandleSettleInvoice(context.Background(), mockInvoice)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.Success)
+}
+
+func TestHandleSettleInvoice_Failure(t *testing.T) {
+	// Mock failed payment status
+	statusChan := make(chan *lnrpc.PaymentStatus)
+	close(statusChan)
+
+	mockInvoice := "mock_invoice"
+
+	lndw := NewLNDWallet("mock_macaroon_path", "mock_address")
+	result, err := lndw.HandleSettleInvoice(context.Background(), mockInvoice)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, result)
+}
+
+func TestSendPaymentWithCustomRequest(t *testing.T) {
+	mockRouter := MockRouterClient{}
+
 	ctx := context.Background()
-
-	// Mock invoice
-	mockInvoice := lnd.Invoice("mock-invoice")
-
-	// Mock successful response
-	mockResponseBody := []byte(`{"payment_hash":"mock-payment-hash"}`)
-	mockMakeRequest := func(ctx context.Context, method, path string, body interface{}) ([]byte, error) {
-		return mockResponseBody, nil
-	}
-	mockLNDWallet.MakeRequest = mockMakeRequest // Injecting mock makeRequest function
-
-	// Call PayLndInvoice
-	result, err := mockLNDWallet.PayLndInvoice(ctx, mockInvoice)
-
-	// Check for errors
-	if err != nil {
-		t.Errorf("PayLndInvoice returned unexpected error: %v", err)
+	req := CustomSendPaymentRequest{
+		Invoice:          "mock_invoice",
+		MaxFee:           100,
+		Timeout:          time.Duration(2e16),
+		AllowSelfPayment: true,
 	}
 
-	// Check result
-	expectedPaymentHash := "mock-payment-hash"
-	if result.PaymentHash != expectedPaymentHash {
-		t.Errorf("PayLndInvoice returned unexpected payment hash, got: %s, want: %s", result.PaymentHash, expectedPaymentHash)
-	}
-	if !result.Success {
-		t.Error("PayLndInvoice returned unexpected success value, got: false, want: true")
-	}
+	statusChan, errChan, err := sendPaymentWithCustomRequest(ctx, mockRouter, req)
 
-	// Mock failure response
-	mockMakeRequestError := errors.New("mock makeRequest error")
-	mockLNDWallet.MakeRequest = func(ctx context.Context, method, path string, body interface{}) ([]byte, error) {
-		return nil, mockMakeRequestError
-	}
+	assert.Nil(t, err)
+	assert.NotNil(t, statusChan)
+	assert.NotNil(t, errChan)
+}
 
-	// Call PayLndInvoice
-	_, err = mockLNDWallet.PayLndInvoice(ctx, mockInvoice)
+func TestNewLNDWallet(t *testing.T) {
+	macaroonPath := "/Users/macbookpro/.polar/networks/2/volumes/c-lightning/bob/rest-api/access.macaroon"
+	address := "127.0.0.1:11002"
 
-	// Check for errors
-	if err == nil {
-		t.Error("PayLndInvoice expected error but got nil")
-	}
-	if err != mockMakeRequestError {
-		t.Errorf("PayLndInvoice returned unexpected error, got: %v, want: %v", err, mockMakeRequestError)
-	}
+	lndw := NewLNDWallet(macaroonPath, address)
+
+	assert.NotNil(t, lndw)
+	assert.Equal(t, macaroonPath, lndw.macaroonPath)
+	assert.Equal(t, address, lndw.BaseURL)
 }

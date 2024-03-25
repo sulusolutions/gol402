@@ -1,29 +1,28 @@
+
 package lnd
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"encoding/hex"
 	"fmt"
-	"io"
-	"net/http"
+	"time"
 	"io/ioutil"
-	"github.com/sulusolutions/gol402/wallet"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+
+	"github.com/lightninglabs/lndclient"
+	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
+	// Define payment request
+	type CustomSendPaymentRequest struct {
+		Invoice          string
+		MaxFee           int64
+		Timeout          time.Duration
+		AllowSelfPayment bool
+	}
 
-type lndWalletResponse struct {
-	PaymentError    string `json:"payment_error"`
-	PaymentPreimage string `json:"payment_preimage"`
-	PaymentRoute    struct{} `json:"payment_route"`
-	PaymentHash     string `json:"payment_hash"`
-}
-
-
-// LNDWallet implements the Wallet interface using the LND WALLET REST API.
 type LNDWallet struct {
-	// BaseURL is the base URL for the  LND wallet API.
 	BaseURL string
 
 	macaroonString []byte 
@@ -31,7 +30,6 @@ type LNDWallet struct {
 
 }
 
-// NewLNDWallet creates a new instance of LNDWallet.
 func NewLNDWallet(macaroonPath string,  address string) *LNDWallet {
 			// Read macaroon file
 	macaroon, err := ioutil.ReadFile(macaroonPath)
@@ -53,71 +51,83 @@ func NewLNDWallet(macaroonPath string,  address string) *LNDWallet {
 	}
 }
 
-// PayInvoice attempts to pay the given invoice and returns the result.
-func (lndw *NewLNDWallet) PayLndInvoice(ctx context.Context, invoice wallet.Invoice) (*wallet.PaymentLndResult, error) {
-	path := "/v2/invoices/settle"
-	body := map[string]interface{}{
-		"preimage": invoice,
-	}
 
-	responseBody, err := lndw.makeRequest(ctx, "POST", path, body)
+func (lndw *NewLNDWallet) HandleSettleInvoice(ctx context.Context, invoice wallet.Invoice) (*wallet.PaymentLndResult, error) {
+	client, err := lndclient.NewLndServices(
+		lndclient.LndServicesConfig{
+			LndAddress: lndw.BaseURL,
+		},
+	)
+
 	if err != nil {
-		return nil, err
+		fmt.Println("Error connecting to LND:", err)
+		return
 	}
 
-	var lndWalletResponse lndWalletResponse
-	if err := json.Unmarshal(responseBody, &lndWalletResponse); err != nil {
-		return nil, fmt.Errorf("error unmarshaling lnd wallet response: %w", err)
+	payReq := CustomSendPaymentRequest{
+		Invoice:          invoice,
+		MaxFee:           100,
+		Timeout:          time.Duration(2e16),
+		AllowSelfPayment: true,
 	}
 
-	var result wallet.PaymentLndResult
-	result.PaymentHash = result.PaymentHash
-	result.Success = true
+	
+	md := metadata.New(map[string]string{
+		"macaroon": hex.EncodeToString(lndw.macaroonString),
+	})
 
-	return &result, nil
+	
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+
+// Send payment with metadata
+statusChan, errChan, err := sendPaymentWithCustomRequest(ctx, client.Router, payReq)
+if err != nil {
+	fmt.Println("Error sending payment:", err)
+	return
 }
 
-func (lndw *LNDWallet) makeRequest(ctx context.Context, method, path string, body interface{}) ([]byte, error) {
-	url := fmt.Sprintf("%s%s", lndw.BaseURL, path)
-
-	var requestBody []byte
-	var err error
-	if body != nil {
-		requestBody, err = json.Marshal(body)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling request body: %w", err)
+// Wait for payment status
+for {
+	select {
+	case paymentStatus, ok := <-statusChan:
+		// If the channel is closed, exit the loop.
+		if !ok {
+			fmt.Println("Payment status channel closed")
+			return nil, "Payment status channel closed"
 		}
+
+		if paymentStatus.State == lnrpc.Payment_SUCCEEDED {
+			preimage := fmt.Sprintf("%s", paymentStatus.Preimage.String())
+			fmt.Println("Payment successful. Preimage:", preimage)
+			var result wallet.PaymentLndResult
+			result.PaymentHash = result.PaymentHash
+			result.Success = true
+			return &result, nil
+
+		} else if paymentStatus.State == lnrpc.Payment_FAILED {
+			fmt.Println("Payment failed:", paymentStatus.FailureReason)
+			return nil, paymentStatus.FailureReason
+		}
+	
+
+	case err := <-errChan:
+		fmt.Println("Error while waiting for payment status:", err)
+		return nil, err
 	}
+}
+	
 
-	// Create the HTTP request
-	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(requestBody))
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
 
-		// Set headers
-		req.Header.Set("Grpc-Metadata-macaroon", hex.EncodeToString(lndw.macaroonString))
-		req.Header.Set("Content-Type", "application/json")
+}
 
-	// Execute the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error making request: %w", err)
-	}
-	defer resp.Body.Close()
 
-	// Read the response body
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading response body: %w", err)
-	}
+func sendPaymentWithCustomRequest(ctx context.Context, router lnrpc.RouterClient, req CustomSendPaymentRequest) (<-chan *lnrpc.PaymentStatus, <-chan error, error) {
+	payReq := lndclient.SendPaymentRequest{
+		Invoice:          req.Invoice,
+		MaxFee:           req.MaxFee,
+		Timeout:          req.Timeout,
+		AllowSelfPayment: req.AllowSelfPayment,
+	};
 
-	// Check for non-200 status codes
-	if resp.StatusCode != http.StatusOK {
-		// Here, you might want to unmarshal the response body to a structured error type, similar to the PHP example
-		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, responseBody)
-	}
-
-	return responseBody, nil
+	return router.SendPayment(ctx, payReq);
 }
