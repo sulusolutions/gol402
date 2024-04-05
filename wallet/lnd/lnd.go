@@ -64,6 +64,8 @@ func (lw *LndWallet) PayInvoice(ctx context.Context, invoice wallet.Invoice) (*w
 	// Wait for payment status
 	for {
 		select {
+		case <-ctx.Done():
+			return nil, ctx.Err() // Return the context's error
 		case paymentStatus, ok := <-statusChan:
 			if !ok {
 				return nil, fmt.Errorf("payment status channel closed")
