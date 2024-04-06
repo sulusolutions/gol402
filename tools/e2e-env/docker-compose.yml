@@ -160,7 +160,6 @@ services:
     container_name: randomnumber
     image: sulusolutions/randomnumber:v1.0.0
 
-
 volumes:
   bitcoin-data:
   lnd-data1:
