@@ -15,7 +15,7 @@ import (
 	"github.com/sulusolutions/gol402/wallet/alby"
 )
 
-func TestClientE2E(t *testing.T) {
+func TestAlbyClientE2E(t *testing.T) {
 	// Retrieve the bearer token from an environment variable
 	bearerToken := os.Getenv("ALBY_BEARER_TOKEN")
 	if bearerToken == "" {

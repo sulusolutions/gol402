@@ -1,0 +1,41 @@
+# The address which the proxy can be reached at.
+listenaddr: "0.0.0.0:8700"
+
+# Should the static file server be enabled that serves files from the directory
+# specified in `staticroot`?
+servestatic: false
+
+# The log level that should be used for the proxy.
+# Valid options include: debug, info, warn, error, panic, fatal.
+debuglevel: "debug"
+
+servername: localhost
+
+# Settings for the lnd node used to generate payment requests. All of these
+# options are required.
+authenticator:
+  lndhost: "lnd2:10010"
+  tlspath: "/data/tls.cert"
+  macdir: "/data/data/chain/bitcoin/regtest"
+  network: "regtest"
+  invoicetimeout: 10
+
+
+# Settings for the etcd instance which the proxy will use to reliably store and
+# retrieve token information.
+etcd:
+  host: "etcd:2379"
+
+# List of services that should be reachable behind the proxy.  Requests will be
+# matched to the services in order, picking the first that satisfies hostregexp
+# and (if set) pathregexp. So order is important!
+#
+# Use single quotes for regular expressions with special characters in them to
+# avoid YAML parsing errors!
+services:
+  - name: "weather"
+    hostregexp: '^localhost:8700$'
+    pathregexp: '/randomnumber'
+    address: "randomnumber"
+    protocol: http
+    price: 10
