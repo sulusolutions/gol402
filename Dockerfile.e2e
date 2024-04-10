@@ -13,5 +13,7 @@ RUN go mod download
 # Copy the rest of your project files
 COPY . .
 
+RUN chmod u+x tools/e2e-env/e2e_tests.sh
+
 # Command to run the test binary; adjust if your test binary has a different name
-CMD ["go", "test", "-tags=e2e", "./..."]
+CMD ["./tools/e2e-env/e2e_tests.sh"]
