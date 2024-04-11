@@ -6,7 +6,6 @@ require github.com/lightninglabs/lndclient v1.0.0
 
 require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -52,7 +51,7 @@ require (
 	github.com/lightninglabs/gozmq v0.0.0-20191113021534-d20a764486bf // indirect
 	github.com/lightninglabs/neutrino v0.11.1-0.20200316235139-bffc52e8f200 // indirect
 	github.com/lightningnetwork/lightning-onion v1.0.2-0.20200501022730-3c8c8d0b89ea // indirect
-	github.com/lightningnetwork/lnd v0.10.0-beta.rc6.0.20200615174244-103c59a4889f // indirect
+	github.com/lightningnetwork/lnd v0.10.0-beta.rc6.0.20200615174244-103c59a4889f
 	github.com/lightningnetwork/lnd/clock v1.0.1 // indirect
 	github.com/lightningnetwork/lnd/queue v1.0.4 // indirect
 	github.com/lightningnetwork/lnd/ticker v1.0.0 // indirect
