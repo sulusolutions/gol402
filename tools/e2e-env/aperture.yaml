@@ -14,7 +14,7 @@ servername: localhost
 # Settings for the lnd node used to generate payment requests. All of these
 # options are required.
 authenticator:
-  lndhost: "lnd2:10010"
+  lndhost: "lnd1:10009"
   tlspath: "/data/tls.cert"
   macdir: "/data/data/chain/bitcoin/regtest"
   network: "regtest"
@@ -34,8 +34,8 @@ etcd:
 # avoid YAML parsing errors!
 services:
   - name: "weather"
-    hostregexp: '^localhost:8700$'
+    hostregexp: '.*'
     pathregexp: '/randomnumber'
-    address: "randomnumber"
+    address: "randomnumber:8080"
     protocol: http
     price: 10

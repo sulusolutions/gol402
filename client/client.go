@@ -13,8 +13,9 @@ import (
 
 // Challenge holds the parsed invoice and macaroon from the WWW-Authenticate header.
 type Challenge struct {
-	Invoice  string
-	Macaroon string
+	HeaderKey string
+	Invoice   string
+	Macaroon  string
 }
 
 // Client represents a client capable of handling L402 payments and making authenticated requests.
@@ -32,9 +33,9 @@ func New(w wallet.Wallet, s tokenstore.Store) *Client {
 	}
 }
 
-// MakeRequest makes an HTTP request and handles L402 payment challenges.
+// Do makes an HTTP request and handles L402 payment challenges.
 // It automatically pays the invoice and retries the request with the L402 token if a 402 Payment Required response is received.
-func (c *Client) MakeRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	// Ensure the request context is set
 	req = req.WithContext(ctx)
 
@@ -79,7 +80,7 @@ func (c *Client) handlePaymentChallenge(ctx context.Context, authHeader, rawUrl,
 	if err != nil {
 		return nil, err
 	}
-	retryReq.Header.Set("Authorization", "L402 "+l402Token)
+	retryReq.Header.Set("Authorization", l402Token)
 	u, err := url.Parse(rawUrl)
 	if err != nil {
 		// For now we will just warn and continue, but this should be handled more gracefully.
@@ -92,33 +93,40 @@ func (c *Client) handlePaymentChallenge(ctx context.Context, authHeader, rawUrl,
 	return http.DefaultClient.Do(retryReq)
 }
 
-// parseHeader uses regular expressions to extract invoice and macaroon from the WWW-Authenticate header.
-func parseHeader(header string) (*Challenge, error) {
-	// Define regular expressions for matching invoice and macaroon
-	invoiceRegex := regexp.MustCompile(`invoice="([^"]+)"`)
-	macaroonRegex := regexp.MustCompile(`macaroon="([^"]+)"`)
+var (
+	headerKeyRegex = regexp.MustCompile(`^(LSAT|L402)`)
+	invoiceRegex   = regexp.MustCompile(`invoice="([^"]+)"`)
+	macaroonRegex  = regexp.MustCompile(`macaroon="([^"]+)"`)
+)
 
-	// Find matches
+// parseHeader uses regular expressions to extract the header key, invoice, and macaroon from the WWW-Authenticate header.
+func parseHeader(header string) (*Challenge, error) {
+	// Find matches using the pre-compiled regex
+	headerKeyMatch := headerKeyRegex.FindString(header)
 	invoiceMatch := invoiceRegex.FindStringSubmatch(header)
 	macaroonMatch := macaroonRegex.FindStringSubmatch(header)
 
-	if invoiceMatch == nil || macaroonMatch == nil {
-		return nil, fmt.Errorf("failed to parse WWW-Authenticate header")
+	// Check for each match and return specific errors
+	if headerKeyMatch == "" {
+		return nil, fmt.Errorf("header key (LSAT or L402) not found in WWW-Authenticate header")
+	}
+	if invoiceMatch == nil {
+		return nil, fmt.Errorf("invoice not found in WWW-Authenticate header")
+	}
+	if macaroonMatch == nil {
+		return nil, fmt.Errorf("macaroon not found in WWW-Authenticate header")
 	}
 
-	// Extract invoice and macaroon from matches
+	// Extract header key, invoice, and macaroon from matches and return the Challenge struct
 	return &Challenge{
-		Invoice:  invoiceMatch[1],
-		Macaroon: macaroonMatch[1],
+		HeaderKey: headerKeyMatch,
+		Invoice:   invoiceMatch[1],
+		Macaroon:  macaroonMatch[1],
 	}, nil
 }
 
 // constructL402Token constructs the L402 token from the given Challenge and preimage.
 func constructL402Token(challenge Challenge, preimage string) string {
-	// Encode the macaroon in base64
-	macaroonBase64 := challenge.Macaroon
-	// Encode the preimage in hex
-	preimageHex := preimage
-	// Construct the token in the format "macaroons:preimage"
-	return macaroonBase64 + ":" + preimageHex
+	// Construct and return the token using fmt.Sprintf for formatting
+	return fmt.Sprintf("%s %s:%s", challenge.HeaderKey, challenge.Macaroon, preimage)
 }

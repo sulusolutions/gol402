@@ -3,6 +3,7 @@ package lnd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/lightninglabs/lndclient"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -53,6 +54,7 @@ func (lw *LndWallet) PayInvoice(ctx context.Context, invoice wallet.Invoice) (*w
 	// Construct the SendPaymentRequest
 	payReq := lndclient.SendPaymentRequest{
 		Invoice: string(invoice),
+		Timeout: time.Duration(60) * time.Second,
 	}
 
 	// Send the payment request to LND

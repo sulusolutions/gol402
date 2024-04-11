@@ -4,9 +4,7 @@ services:
       context: ../../ 
       dockerfile: Dockerfile.e2e 
     volumes:
-      - bitcoin-data:/data 
-      - lnd-data1:/data/lnd1
-      - lnd-data2:/data/lnd2
+      - lnd-data2:/data
     depends_on:
       - aperture
       - etcd
@@ -29,10 +27,10 @@ services:
     command: [ "aperture", "--insecure" ]
     volumes:
       - ./aperture.yaml:/root/.aperture/aperture.yaml
-      - lnd-data2:/data
+      - lnd-data1:/data
     depends_on:
       - etcd
-      - lnd2
+      - lnd1
       - configurewallets
 
   # ETCD instance for Aperture
@@ -108,7 +106,7 @@ services:
       - --tlsextradomain=lnd1
       - --listen=0.0.0.0:9735
       - --rpclisten=0.0.0.0:10009
-      - --restlisten=0.0.0.0:8080
+      - --restlisten=0.0.0.0:8082
       - --bitcoin.active
       - --bitcoin.regtest
       - --bitcoin.node=bitcoind
@@ -124,7 +122,7 @@ services:
     ports:
       - "9735:9735"
       - "10009:10001"
-      - "8080:8080"
+      - "8082:8082"
     volumes:
       - lnd-data1:/data
 
@@ -179,6 +177,8 @@ services:
   randomnumber:
     container_name: randomnumber
     image: sulusolutions/randomnumber:v1.0.0
+    ports:
+      - "8080:8080"
 
 volumes:
   bitcoin-data:

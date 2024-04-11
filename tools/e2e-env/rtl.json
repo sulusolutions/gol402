@@ -1,33 +1,33 @@
 {
-    "port": "8701",
-    "SSO": {
-      "rtlSSO": 0,
-      "rtlCookiePath": ""
-    },
-    "nodes": [
-      {
-        "index": 1,
-        "lnNode": "lnd1",
-        "lnImplementation": "LND",
-        "Authentication": {
-          "macaroonPath": "/data/lnd1/data/chain/bitcoin/regtest/"
-        },
-        "Settings": {
-          "lnServerUrl": "https://lnd1:8080"
-        }
+  "port": "8701",
+  "SSO": {
+    "rtlSSO": 0,
+    "rtlCookiePath": ""
+  },
+  "nodes": [
+    {
+      "index": 1,
+      "lnNode": "lnd1",
+      "lnImplementation": "LND",
+      "Authentication": {
+        "macaroonPath": "/data/lnd1/data/chain/bitcoin/regtest/"
       },
-      {
-        "index": 2,
-        "lnNode": "lnd2",
-        "lnImplementation": "LND",
-        "Authentication": {
-          "macaroonPath": "/data/lnd2/data/chain/bitcoin/regtest/"
-        },
-        "Settings": {
-          "lnServerUrl": "https://lnd2:8081"
-        }
+      "Settings": {
+        "lnServerUrl": "https://lnd1:8080"
       }
-    ],
-    "defaultNodeIndex": 1,
-    "multiPassHashed": "b33fa8bb8ba45e37b96bec80722c32a9f63ec33c2be435e85eb4872da83626e4"
-  }
+    },
+    {
+      "index": 2,
+      "lnNode": "lnd2",
+      "lnImplementation": "LND",
+      "Authentication": {
+        "macaroonPath": "/data/lnd2/data/chain/bitcoin/regtest/"
+      },
+      "Settings": {
+        "lnServerUrl": "https://lnd2:8081"
+      }
+    }
+  ],
+  "defaultNodeIndex": 1,
+  "multiPassHashed": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
+}
