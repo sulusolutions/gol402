@@ -47,37 +47,37 @@ jobs:
       docker:
         image: docker:19.03.12
         options: --privileged
-      steps:
-        - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-        - name: Cache Go Modules
-          uses: actions/cache@v3
-          with:
-            path: |
-              ~/go/pkg/mod
-              ~/.cache/go-build
-            key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-            restore-keys: |
-              ${{ runner.os }}-go-
+      - name: Cache Go Modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-        - uses: actions/setup-go@v3
-          with:
-            go-version: '1.21'
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.21'
 
-        - name: Set up Docker Compose
-          run: |
-            sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
-            docker-compose version
+      - name: Set up Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose version
 
-        - name: Start Docker Compose environment
-          run: docker-compose -f ./tools/e2e-env/docker-compose.yml up -d
+      - name: Start Docker Compose environment
+        run: docker-compose -f ./tools/e2e-env/docker-compose.yml up -d
 
-        - name: Run E2E Tests with Docker Compose
-          run: docker-compose -f ./tools/e2e-env/docker-compose.yml run --build e2e-tests
-          env:
-            ALBY_BEARER_TOKEN: ${{ secrets.ALBY_BEARER_TOKEN }}
+      - name: Run E2E Tests with Docker Compose
+        run: docker-compose -f ./tools/e2e-env/docker-compose.yml run --build e2e-tests
+        env:
+          ALBY_BEARER_TOKEN: ${{ secrets.ALBY_BEARER_TOKEN }}
 
-        - name: Cleanup Docker Compose
-          if: always()
-          run: docker-compose -f ./tools/e2e-env/docker-compose.yml down
+      - name: Cleanup Docker Compose
+        if: always()
+        run: docker-compose -f ./tools/e2e-env/docker-compose.yml down
