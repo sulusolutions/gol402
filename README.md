@@ -64,7 +64,7 @@ func main() {
     }
 
     // Use the modified MakeRequest function which takes *http.Request.
-    response, err := l402Client.MakeRequest(context.Background(), req)
+    response, err := l402Client.Do(context.Background(), req)
     if err != nil {
         fmt.Printf("Error making request: %v\n", err)
         return
