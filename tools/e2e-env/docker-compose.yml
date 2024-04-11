@@ -1,0 +1,189 @@
+services:
+  e2e-tests:
+    build:
+      context: ../../ 
+      dockerfile: Dockerfile.e2e 
+    volumes:
+      - lnd-data2:/data
+    depends_on:
+      - aperture
+      - etcd
+      - configurewallets
+      - bitcoind
+      - lnd1
+      - lnd2
+      - rtl
+      - randomnumber
+    environment:
+      ALBY_BEARER_TOKEN: ${ALBY_BEARER_TOKEN}
+
+  # Aperture  
+  aperture:
+    image: lightninglabs/aperture:v0.3.1-beta
+    container_name: aperture
+    restart: unless-stopped
+    ports:
+      - 8700:8700
+    command: [ "aperture", "--insecure" ]
+    volumes:
+      - ./aperture.yaml:/root/.aperture/aperture.yaml
+      - lnd-data1:/data
+    depends_on:
+      - etcd
+      - lnd1
+      - configurewallets
+
+  # ETCD instance for Aperture
+  etcd:
+    container_name: etcd
+    image: quay.io/coreos/etcd:v3.5.0
+    volumes:
+      - /tmp/etcd-data:/etcd-data
+    command:
+      - /usr/local/bin/etcd
+      - --data-dir=/etcd-data
+      - --name=sparkwall-db
+      - --advertise-client-urls=http://0.0.0.0:2379
+      - --listen-client-urls=http://0.0.0.0:2379
+    ports:
+      - "2379:2379"
+
+  # Utility container to setup and work with the lightning network
+  configurewallets:
+    build:
+      context: ./configure-wallets
+      dockerfile: Dockerfile
+    container_name: configurewallets
+    command: [ "./scripts/init-script.sh" ]
+    volumes:
+      - lnd-data1:/data/lnd1
+      - lnd-data2:/data/lnd2
+    depends_on:
+      - bitcoind
+      - lnd1
+      - lnd2
+
+  # Two node lightning regtest network with backend bitcoind
+  bitcoind:
+    image: ruimarinho/bitcoin-core:24.0.1
+    container_name: bitcoind
+    command:
+      - -printtoconsole
+      - -regtest=1
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcuser=user
+      - -rpcpassword=pass
+      - -rpcport=18443
+      - -fallbackfee=0.0002
+      - -txindex=1
+      - -dnsseed=0
+      - -upnp=0
+      - -zmqpubrawblock=tcp://0.0.0.0:28332
+      - -zmqpubrawtx=tcp://0.0.0.0:28333
+      - -server=1
+      - -rest
+      - -listen=1
+      - -listenonion=0
+      - -blockfilterindex=1
+      - -peerblockfilters=1
+    ports:
+      - "18443:18443"
+      - "18444:19444"
+      - "28332:28332"
+      - "28333:28333"
+    volumes:
+      - bitcoin-data:/data
+
+  lnd1:
+    image: lightninglabs/lnd:v0.17.3-beta
+    container_name: lnd1
+    command:
+      - --noseedbackup
+      - --trickledelay=5000
+      - --alias=lnd1
+      - --externalip=lnd1
+      - --tlsextradomain=lnd1
+      - --listen=0.0.0.0:9735
+      - --rpclisten=0.0.0.0:10009
+      - --restlisten=0.0.0.0:8082
+      - --bitcoin.active
+      - --bitcoin.regtest
+      - --bitcoin.node=bitcoind
+      - --bitcoind.rpchost=bitcoind
+      - --bitcoind.rpcuser=user
+      - --bitcoind.rpcpass=pass
+      - --bitcoind.zmqpubrawblock=tcp://bitcoind:28332
+      - --bitcoind.zmqpubrawtx=tcp://bitcoind:28333
+      - --lnddir=/data
+      - --debuglevel=info
+    depends_on:
+      - bitcoind
+    ports:
+      - "9735:9735"
+      - "10009:10001"
+      - "8082:8082"
+    volumes:
+      - lnd-data1:/data
+
+  lnd2:
+    image: lightninglabs/lnd:v0.17.3-beta
+    container_name: lnd2
+    command:
+      - --noseedbackup
+      - --trickledelay=5000
+      - --alias=lnd2
+      - --externalip=lnd2
+      - --tlsextradomain=lnd2
+      - --listen=0.0.0.0:9735
+      - --rpclisten=0.0.0.0:10010
+      - --restlisten=0.0.0.0:8081
+      - --bitcoin.active
+      - --bitcoin.regtest
+      - --bitcoin.node=bitcoind
+      - --bitcoind.rpchost=bitcoind
+      - --bitcoind.rpcuser=user
+      - --bitcoind.rpcpass=pass
+      - --bitcoind.zmqpubrawblock=tcp://bitcoind:28332
+      - --bitcoind.zmqpubrawtx=tcp://bitcoind:28333
+      - --lnddir=/data
+      - --debuglevel=info
+    depends_on:
+      - bitcoind
+    ports:
+      - "9736:9735"
+      - "10010:10001"
+      - "8081:8081"
+    volumes:
+      - lnd-data2:/data
+
+  rtl:
+    container_name: rtl
+    image: shahanafarooqui/rtl:0.15.0
+    restart: unless-stopped
+    depends_on:
+      - lnd1
+    volumes:
+      - lnd-data1:/data/lnd1:ro
+      - lnd-data2:/data/lnd2:ro
+      - rtl_db:/database
+      - ./rtl.json:/RTL/RTL-Config.json
+    ports:
+      - "8701:8701"
+    environment:
+      PORT: 8701
+      HOST: 0.0.0.0
+
+  randomnumber:
+    container_name: randomnumber
+    image: sulusolutions/randomnumber:v1.0.0
+    ports:
+      - "8080:8080"
+
+volumes:
+  bitcoin-data:
+  lnd-data1:
+  lnd-data2:
+  rtl_db:
+
+

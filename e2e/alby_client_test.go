@@ -15,11 +15,11 @@ import (
 	"github.com/sulusolutions/gol402/wallet/alby"
 )
 
-func TestClientE2E(t *testing.T) {
+func TestAlbyClientE2E(t *testing.T) {
 	// Retrieve the bearer token from an environment variable
 	bearerToken := os.Getenv("ALBY_BEARER_TOKEN")
 	if bearerToken == "" {
-		t.Fatalf("ALBY_BEARER_TOKEN is not set, skipping E2E test")
+		t.Skip("ALBY_BEARER_TOKEN is not set, skipping E2E test")
 	}
 
 	// Initialize the Alby wallet with the bearer token
@@ -39,7 +39,7 @@ func TestClientE2E(t *testing.T) {
 	}
 
 	// Use the modified MakeRequest function which takes *http.Request
-	response, err := client.MakeRequest(ctx, req)
+	response, err := client.Do(ctx, req)
 	if err != nil {
 		t.Fatalf("Failed to make request: %v", err)
 	}

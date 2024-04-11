@@ -98,7 +98,7 @@ func TestMakeRequest(t *testing.T) {
 			}
 
 			// Now use the modified MakeRequest function which takes *http.Request
-			resp, err := client.MakeRequest(context.Background(), req)
+			resp, err := client.Do(context.Background(), req)
 
 			if (err != nil) != tt.wantError {
 				t.Errorf("MakeRequest() error = %v, wantError %v", err, tt.wantError)

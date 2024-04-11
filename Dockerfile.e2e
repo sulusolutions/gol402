@@ -1,0 +1,19 @@
+# Use the official Golang image as a parent image
+FROM golang:1.21
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the Go module files
+COPY go.mod go.sum ./
+
+# Download the dependencies - they will be cached if the go.mod and go.sum files don't change
+RUN go mod download
+
+# Copy the rest of your project files
+COPY . .
+
+RUN chmod u+x tools/e2e-env/e2e_tests.sh
+
+# Command to run the test binary; adjust if your test binary has a different name
+CMD ["./tools/e2e-env/e2e_tests.sh"]
