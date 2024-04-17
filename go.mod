@@ -1,6 +1,6 @@
 module github.com/sulusolutions/gol402
 
-go 1.21.3
+go 1.21
 
 require github.com/lightninglabs/lndclient v1.0.0
 

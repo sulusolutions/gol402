@@ -35,10 +35,7 @@ func New(w wallet.Wallet, s tokenstore.Store) *Client {
 
 // Do makes an HTTP request and handles L402 payment challenges.
 // It automatically pays the invoice and retries the request with the L402 token if a 402 Payment Required response is received.
-func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
-	// Ensure the request context is set
-	req = req.WithContext(ctx)
-
+func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	// Try to retrieve and use L402 token if available
 	l402Token, ok := c.store.Get(req.URL)
 	if ok {
@@ -52,7 +49,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 
 	if response.StatusCode == http.StatusPaymentRequired {
 		authHeader := response.Header.Get("WWW-Authenticate")
-		return c.handlePaymentChallenge(ctx, authHeader, req.URL.String(), req.Method)
+		return c.handlePaymentChallenge(req.Context(), authHeader, req.URL.String(), req.Method)
 	}
 
 	return response, nil

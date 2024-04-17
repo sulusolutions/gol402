@@ -38,8 +38,7 @@ func TestAlbyClientE2E(t *testing.T) {
 		t.Fatalf("Failed to create request: %v", err)
 	}
 
-	// Use the modified MakeRequest function which takes *http.Request
-	response, err := client.Do(ctx, req)
+	response, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("Failed to make request: %v", err)
 	}
