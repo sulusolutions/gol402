@@ -56,20 +56,18 @@ func main() {
     // Create the L402 client.
     l402Client := client.New(albyWallet, tokenStore)
 
-    // Create a new HTTP request to the rnd.ln.sulu.sh/randomnumber API.
-    req, err := http.NewRequest("GET", "https://rnd.ln.sulu.sh/randomnumber", nil)
-    if err != nil {
-        fmt.Printf("Failed to create request: %v\n", err)
-        return
-    }
+    // Create a new HTTP request to the L402 API
+	ctx := context.Background()
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://rnd.ln.sulu.sh/randomnumber", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
 
-    // Use the modified MakeRequest function which takes *http.Request.
-    response, err := l402Client.Do(context.Background(), req)
-    if err != nil {
-        fmt.Printf("Error making request: %v\n", err)
-        return
-    }
-    defer response.Body.Close()
+	response, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to make request: %v", err)
+	}
+	defer response.Body.Close()
 
     fmt.Println("Request successful, status code:", response.StatusCode)
 }
