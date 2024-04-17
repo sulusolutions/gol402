@@ -36,8 +36,7 @@ func TestLndClientE2E(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://aperture:8700/randomnumber", nil)
 	require.NoError(t, err)
 
-	// Use the modified MakeRequest function which takes *http.Request
-	response, err := client.Do(ctx, req)
+	response, err := client.Do(req)
 	require.NoError(t, err)
 	defer response.Body.Close()
 
