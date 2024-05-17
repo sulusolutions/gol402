@@ -63,7 +63,7 @@ func main() {
 		t.Fatalf("Failed to create request: %v", err)
 	}
 
-	response, err := client.Do(req)
+	response, err := l402Client.Do(req)
 	if err != nil {
 		t.Fatalf("Failed to make request: %v", err)
 	}
